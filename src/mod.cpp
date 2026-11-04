@@ -58,15 +58,12 @@ constexpr float kBladeEnd = 117.0f;
 constexpr float kBladeCenterY = 0.5f;
 
 constexpr float kCoreWidth = 5.6f;   // half-width of the bright core at the guard
-constexpr float kHaloWidth = 18.0f;  // half-width of the soft halo at the guard
+constexpr float kHaloWidth = 13.0f;  // half-width of the soft halo at the guard
 constexpr float kTipTaper = 0.7f;    // width at the tip relative to the guard
-constexpr float kHaloCap = 0.4f;     // how far the halo runs past the tip/guard, relative to its width
-constexpr float kCoreCap = 0.5f;
 constexpr float kCoreBias = 2.5f;    // pull the core toward the camera so it sits over the blade
 constexpr float kHaloBias = 1.5f;
 
 constexpr float kCoreAlpha = 0.75f;
-constexpr float kLightScale = 0.3f;  // world light relative to vanilla's glowing-sword light
 constexpr float kHaloAlpha = 0.42f;
 
 constexpr float kFadeIn = 0.15f;   // per game tick
@@ -197,7 +194,7 @@ void put_vertex(V3 p, float s, float t) {
 }
 
 // One camera-facing capsule ribbon from a to b. wa/wb: half-widths at each end.
-void draw_ribbon(V3 a, V3 b, float wa, float wb, float cap, V3 cam, float bias) {
+void draw_ribbon(V3 a, V3 b, float wa, float wb, V3 cam, float bias) {
     const V3 dir = norm(b - a);
     const V3 mid = (a + b) * 0.5f;
     const V3 toCam = norm(cam - mid);
@@ -208,7 +205,7 @@ void draw_ribbon(V3 a, V3 b, float wa, float wb, float cap, V3 cam, float bias) 
     }
     side = norm(side);
     const V3 off = toCam * bias;
-    const V3 a0 = a - dir * (wa * cap) + off, a1 = a + off, b1 = b + off, b0 = b + dir * (wb * cap) + off;
+    const V3 a0 = a - dir * wa + off, a1 = a + off, b1 = b + off, b0 = b + dir * wb + off;
     const V3 sa = side * wa, sb = side * wb;
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 12);
@@ -296,11 +293,11 @@ void GlowPacket::draw() {
     // Halo first, then the core on top.
     const float hw = kHaloWidth * haloSize * scale;
     set_layer_color(pal.halo, kHaloAlpha * percent(g_cvHaloBright) * fade);
-    draw_ribbon(a, b, hw, hw * kTipTaper, kHaloCap, cam, kHaloBias * scale);
+    draw_ribbon(a, b, hw, hw * kTipTaper, cam, kHaloBias * scale);
 
     const float cw = kCoreWidth * scale;
     set_layer_color(pal.core, kCoreAlpha * percent(g_cvCoreBright) * fade);
-    draw_ribbon(a, b, cw, cw * kTipTaper, kCoreCap, cam, kCoreBias * scale);
+    draw_ribbon(a, b, cw, cw * kTipTaper, cam, kCoreBias * scale);
 
     J3DShape::resetVcdVatCache();
 }
@@ -348,7 +345,7 @@ void on_set_light_post(ModContext*, void* args, void*, void*) {
 
     float target = 0.0f;
     if (!vanillaLight && g_fade > 0.0f && g_color != GLOW_OFF) {
-        target = (link->mCutType == 0 ? 0.4f : 1.5f) * kLightScale * g_fade * percent(g_cvLight);
+        target = (link->mCutType == 0 ? 0.4f : 1.5f) * g_fade * percent(g_cvLight);
     }
     const float step = light_m->mPower * 0.2f;
     approach(g_lightPower, target, step, step);
